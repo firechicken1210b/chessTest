@@ -28,6 +28,29 @@ function draw() {
 	  	text(upData.Rplayer, width-60, 30);
 	  	textStyle(ITALIC);
 		text('lost angels with dirty tears', width/2, height-20);
+
+		if(pointMe!=0){
+			for(var i =0;i<mapData.length;i++){
+				if(mapData[i].mapGhost == pointMe && mapData[i].user >0){
+					stroke(0);
+					fill(255,200);
+					rectMode(CORNER);
+					rect(mouseX,mouseY,100,120);
+					noStroke();
+					fill(0);
+					textAlign(LEFT);
+					textStyle(NORMAL);
+					text('Player: '+mapData[i].user,mouseX+10,mouseY+13*2);
+					text('Name: '+mapData[i].ghostName,mouseX+10,mouseY+13*3);
+					text('Step: '+mapData[i].step,mouseX+10,mouseY+13*4);
+					text('Attack: '+mapData[i].attack,mouseX+10,mouseY+13*5);
+					text('AttackRange: '+mapData[i].attackRange,mouseX+10,mouseY+13*6);
+					text('Ability: '+mapData[i].ability,mouseX+10,mouseY+13*7);
+					text('Movable: '+mapData[i].chessMovable,mouseX+10,mouseY+13*8);
+				}
+			}
+		}
+				
 	}
 }
 function roundown(){
@@ -280,6 +303,7 @@ function mapSetup(){
 					}
 					rect(0,0,r,r);
 				}
+				pointMe=this;
 			};
 			emptyGhost.onMouseOut = function() {
 				this.draw = function(){
@@ -287,11 +311,12 @@ function mapSetup(){
 					noStroke();
 					rect(0,0,r,r);
 				}
+				pointMe =0;
 			};
 		}
 	}
 }
-
+var pointMe;
 function farmer(team,data) {
 	var readyButton = createButton('ready');
 	var readyButtonX = (player== 1)? 50:width-30-readyButton.width;
@@ -310,16 +335,17 @@ function farmer(team,data) {
 
 	for(var i=0;i<team;i++){
 		var farmer = createSprite(mapData[i*2].x,mapData[i*2].y,r-3,r-3);
-		//ghostDrawer(mapData[i*2]);   <-----farmar is not data
+		//ghostDrawer(mapData[i*2]);   <-----farmar is not data	
 		farmer.draw = function(){
-			fill(100);
-			noStroke
+			fill(100,0,0);
+			noStroke();
 			rectMode(CENTER);
 			rect(0,0,r-3,r-3);
 			fill(255);
 			textAlign(CENTER);
 			text(data,0,5);
 		}
+
 		mapData[i*2].user = 1;
 		mapData[i*2].ghost = farmer;
 		mapData[i*2].ghostName = 'farmer';
@@ -333,7 +359,7 @@ function farmer(team,data) {
 		//ghostDrawer(mapData[mapData.length-1-i*2]);   <-----farmar is not data
 		farmer.draw = function(){
 			fill(100);
-			noStroke
+			noStroke();
 			rectMode(CENTER);
 			rect(0,0,r-3,r-3);
 			fill(255);
@@ -448,15 +474,23 @@ function mapDataFounder(data){
 function ghostDrawer(data){
 	data.ghost.draw = function(){
 		if(data.ghostName == 'farmer'){
-			fill(100);
-			noStroke
+			if(data.user==1){
+				fill(100,0,0);
+			}else if(data.user==2){
+				fill(100);
+			}
+			noStroke();
 			rectMode(CENTER);
 			rect(0,0,r-3,r-3);
 			fill(255);
 			textAlign(CENTER);
 			text(data.amount,0,5);
 		}else if(data.ghostName == 'shooter'){
-			fill(0);
+			if(data.user==1){
+				fill(200,0,0);
+			}else if(data.user==2){
+				fill(0);
+			}
 			noStroke
 			rectMode(CENTER);
 			rect(0,0,r-3,r-3);
@@ -464,10 +498,16 @@ function ghostDrawer(data){
 			textAlign(CENTER);
 			text(data.amount,0,5);
 		}else if(data.ghostName == 'king'){
-			fill(255);
-			stroke(0);
+			if(data.user==1){
+				stroke(255,0,0);
+				fill(255);
+			}else if(data.user==2){
+				stroke(0);
+				fill(255);
+			}
 			rectMode(CENTER);
 			rect(0,0,r-3,r-3);
+			noStroke();
 			fill(0);
 			textAlign(CENTER);
 			text(data.amount,0,5);
