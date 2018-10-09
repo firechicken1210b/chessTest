@@ -1,12 +1,41 @@
+//map info
 var r = 35,between = 6;
-var row = 16,column = 9;
-
-var player = 2;
+var row = 16,column = 13;
+//info
+var player;
 var roundis = 1,roundCount = 0;
-var ready = false;
+var readyButton,ready = false;
+var pointMe;
+var cnv;
+// window size things--------------------
+function centerCanvas() {
+  var x = (windowWidth - width) / 2;
+  var y = (windowHeight - height) / 2;
+  cnv.position(x, y);
+}
 
+function windowResized() {
+  centerCanvas();
+  var x = (windowWidth - width) / 2;
+  var y = (windowHeight - height) / 2;
+  if(loginRoundown==0){
+	input.position(x+width/2-input.width/2, y+height/2);
+	submitButton.position(input.x + input.width, y+height/2);
+  }else if(loginRoundown==1){
+	createRoom.position(x+(width-createRoom.width)/2, y+height/2);
+	join.position(x+(width-join.width)/2, y+height/2+createRoom.height*2);
+	roomCode.position(x+(width-roomCode.width)/2, join.y+join.height);
+  }else if(loginRoundown ==2){
+  	var readyButtonX = (player== 1)? x+50:x+width-30-readyButton.width;
+	readyButton.position(readyButtonX,y+height/2);
+  }
+}
+// window size things--------------------
+
+// main processing things--------------------
 function setup() {
-	canvas = createCanvas(900,450).parent('processing');
+	cnv = createCanvas(900,900).parent('processing');
+	centerCanvas();
 	firebaseSetup();
 	submit();
 
@@ -27,7 +56,7 @@ function draw() {
 	  	text(upData.Lplayer, 60, 30);
 	  	text(upData.Rplayer, width-60, 30);
 	  	textStyle(ITALIC);
-		text('lost angels with dirty tears', width/2, height-20);
+		text('lost angels with dirty tears', width/2+10, height-20);
 
 		if(pointMe!=0){
 			for(var i =0;i<mapData.length;i++){
@@ -50,12 +79,13 @@ function draw() {
 				}
 			}
 		}
+				
 	}
 }
+// main processing things--------------------
 function roundown(){
 	if(roundCount % 4 ==0){
-		//move
-		//console.log('i am ready');
+		//step 01: move and update2cloud
 		if(ready){
 			roundis += 1;
 			roundCount += 1;
@@ -93,7 +123,7 @@ function roundown(){
 			}
 		}
 	}else if(roundCount % 4 ==1){
-		//data update
+		//step 02: download the enemy data from cloud
 		console.log(roundCount);
 		if(upData.Rroundis == upData.Lroundis){
 			var enemy = (player == 1)? 2:1;
@@ -174,19 +204,20 @@ function roundown(){
 			roundCount += 1;
 		}
 	}else if(roundCount % 4 ==2){
-		//attack and ability
-		//console.log('attack and ability');
+		//step 03: attack
 		attack();
 		roundCount += 1;
 	}else if(roundCount % 4 ==3){
-		//mega envolve
-		//console.log('mega envolve');
+		//step 04: mega envolve and ability
 		mega();
+		ability();
 		roundCount += 1;
 
-		var readyButton = createButton('ready');
-		var readyButtonX = (player== 1)? 50:width-30-readyButton.width;
-		readyButton.position(readyButtonX,height/2);
+		readyButton = createButton('ready');
+		var x = (windowWidth - width) / 2;
+  		var y = (windowHeight - height) / 2;
+  		var readyButtonX = (player== 1)? x+50:x+width-30-readyButton.width;
+		readyButton.position(readyButtonX,y+height/2);
 		readyButton.mousePressed( function(){
 			if(roundCount %4 == 0){
 				ready = !ready;
@@ -315,12 +346,13 @@ function mapSetup(){
 		}
 	}
 }
-var pointMe;
-function farmer(team,data) {
-	var readyButton = createButton('ready');
-	var readyButtonX = (player== 1)? 50:width-30-readyButton.width;
-	readyButton.position(readyButtonX,height/2);
 
+function farmer(team,data) {
+	readyButton = createButton('ready');
+	var readyButtonX = (player== 1)? 50:width-30-readyButton.width;
+	var x = (windowWidth - width) / 2;
+	var y = (windowHeight - height) / 2;
+	readyButton.position(x+readyButtonX,y+height/2);
 	readyButton.mousePressed( function(){
 		if(roundCount %4 == 0){
 			ready = !ready;
@@ -333,48 +365,59 @@ function farmer(team,data) {
 	});
 
 	for(var i=0;i<team;i++){
-		var farmer = createSprite(mapData[i*2].x,mapData[i*2].y,r-3,r-3);
-		//ghostDrawer(mapData[i*2]);   <-----farmar is not data	
-		farmer.draw = function(){
-			fill(100,0,0);
-			noStroke();
-			rectMode(CENTER);
-			rect(0,0,r-3,r-3);
-			fill(255);
-			textAlign(CENTER);
-			text(data,0,5);
-		}
+		if(player == 1){
+			var bornX = floor(random(0,row/2));
+			var bornY = floor(random(0,column-1));
+			console.log(bornX,bornY);
+			var farmer = createSprite(mapData[bornX+bornY*row].x,mapData[bornX+bornY*row].y,r-3,r-3);
+			//ghostDrawer(mapData[i*2]);   <-----farmar is not data	
+			farmer.draw = function(){
+				fill(100,0,0);
+				noStroke();
+				rectMode(CENTER);
+				rect(0,0,r-7,r-7);
+				fill(255);
+				textAlign(CENTER);
+				text(data,0,5);
+			}
 
-		mapData[i*2].user = 1;
-		mapData[i*2].ghost = farmer;
-		mapData[i*2].ghostName = 'farmer';
-		mapData[i*2].amount = data;
-		mapData[i*2].step = 2;
-		mapData[i*2].attack = 1;
-		mapData[i*2].attackRange = 1;
-		mapData[i*2].ability = 0;
-
-		farmer = createSprite(mapData[mapData.length-1-i*2].x,mapData[mapData.length-1-i*2].y,r-3,r-3);
-		//ghostDrawer(mapData[mapData.length-1-i*2]);   <-----farmar is not data
-		farmer.draw = function(){
-			fill(100);
-			noStroke();
-			rectMode(CENTER);
-			rect(0,0,r-3,r-3);
-			fill(255);
-			textAlign(CENTER);
-			text(data,0,5);
+			mapData[bornX+bornY*row].user = 1;
+			mapData[bornX+bornY*row].ghost = farmer;
+			mapData[bornX+bornY*row].ghostName = 'farmer';
+			mapData[bornX+bornY*row].amount = data;
+			mapData[bornX+bornY*row].step = 2;
+			mapData[bornX+bornY*row].attack = 1;
+			mapData[bornX+bornY*row].attackRange = 1;
+			mapData[bornX+bornY*row].ability = 1;
 		}
-		mapData[mapData.length-1-i*2].user = 2;
-		mapData[mapData.length-1-i*2].ghost = farmer;
-		mapData[mapData.length-1-i*2].ghostName = 'farmer';
-		mapData[mapData.length-1-i*2].amount = data;
-		mapData[mapData.length-1-i*2].step = 2;
-		mapData[mapData.length-1-i*2].attack = 1;
-		mapData[mapData.length-1-i*2].attackRange = 1;
-		mapData[mapData.length-1-i*2].ability = 0;
+		if(player == 2){
+			var bornX = floor(random(0,row/2));
+			var bornY = floor(random(0,column-1));
+			console.log(bornX,bornY);
+			var farmer = createSprite(mapData[mapData.length-1-(bornX+bornY*row)].x,mapData[mapData.length-1-(bornX+bornY*row)].y,r-3,r-3);
+			//ghostDrawer(mapData[mapData.length-1-i*2]);   <-----farmar is not data
+			farmer.draw = function(){
+				fill(100);
+				noStroke();
+				rectMode(CENTER);
+				rect(0,0,r-7,r-7);
+				fill(255);
+				textAlign(CENTER);
+				text(data,0,5);
+			}
+
+			mapData[mapData.length-1-(bornX+bornY*row)].user = 2;
+			mapData[mapData.length-1-(bornX+bornY*row)].ghost = farmer;
+			mapData[mapData.length-1-(bornX+bornY*row)].ghostName = 'farmer';
+			mapData[mapData.length-1-(bornX+bornY*row)].amount = data;
+			mapData[mapData.length-1-(bornX+bornY*row)].step = 2;
+			mapData[mapData.length-1-(bornX+bornY*row)].attack = 1;
+			mapData[mapData.length-1-(bornX+bornY*row)].attackRange = 1;
+			mapData[mapData.length-1-(bornX+bornY*row)].ability = 1;
+		}
 	}
 }
+//move system (mouse press)-----------------------------------------------------------------
 function deliver(OldData,NewData){
 	if(OldData.amount ==1){
 		dataInherit(OldData,NewData);
@@ -410,7 +453,9 @@ function deliver(OldData,NewData){
 		}
 	}
 }
-//move
+//move system (mouse press)-----------------------------------------------------------------
+
+//move system (just click)-----------------------------------------------------------------
 function dataInherit(OldData,NewData){
 	OldData.chessMovable = false;
 		var changeuser = NewData.user;
@@ -453,7 +498,9 @@ function dataInherit(OldData,NewData){
 				}
 	chessMoving = 0;
 }
+//move system -----------------------------------------------------------------
 
+//little tools -----------------------------------------------------------------
 function distanceMovable(me,there){
 	if(abs(there.row - me.row)<= me.step && abs(there.column - me.column)<=me.step){
 		return true;
@@ -480,8 +527,21 @@ function ghostDrawer(data){
 			}
 			noStroke();
 			rectMode(CENTER);
-			rect(0,0,r-3,r-3);
+			rect(0,0,r-7,r-7);
 			fill(255);
+			textAlign(CENTER);
+			text(data.amount,0,5);
+		}else if(data.ghostName == 'knight'){
+			if(data.user==1){
+				fill(200,0,0);
+			}else if(data.user==2){
+				fill(200);
+			}
+			stroke(0);
+			rectMode(CENTER);
+			rect(0,0,r-5,r-5);
+			fill(255);
+			noStroke();
 			textAlign(CENTER);
 			text(data.amount,0,5);
 		}else if(data.ghostName == 'shooter'){
@@ -496,7 +556,7 @@ function ghostDrawer(data){
 			fill(255);
 			textAlign(CENTER);
 			text(data.amount,0,5);
-		}else if(data.ghostName == 'king'){
+		}else if(data.ghostName == 'angel'){
 			if(data.user==1){
 				stroke(255,0,0);
 				fill(255);
@@ -529,7 +589,9 @@ function ghostcleaner(){
   		}
   	} 
 }
+//little tools -----------------------------------------------------------------
 
+//mega systems -----------------------------------------------------------------
 function mega(){
 	for(var i=row-1;i>-1;i--){
 	for(var j=0;j<column;j++){
@@ -537,37 +599,37 @@ function mega(){
 		var primary = mapData[i*column+j];
 		if(i-1>=0){
 			var secondary = mapData[(i-1)*column+j];
-			if(secondary.ghostName == primary.ghostName && secondary.user == primary.user && primary.ghostName!='king'){
+			if(secondary.ghostName == primary.ghostName && secondary.user == primary.user && primary.ghostName!='angel'){
 				if(primary.amount <= secondary.amount){
 					secondary.amount -= primary.amount;
 					megaList(primary);
 					ghostDrawer(primary);
 					ghostDrawer(secondary);
-					if(primary.amount > 0)console.log(primary.row,primary.column, 'with' , secondary.row,secondary.column ," envolve 'shooter' : ",primary.amount);
+					if(primary.amount > 0)console.log(primary.row,primary.column, 'with' , secondary.row,secondary.column ," envolve: ",primary.ghostName,primary.amount);
 				}else if(primary.amount > secondary.amount){
 					primary.amount -= secondary.amount;
 					megaList(secondary);
 					ghostDrawer(primary);
 					ghostDrawer(secondary);
-					if(secondary.amount > 0)console.log(secondary.row,secondary.column, 'with' , primary.row,primary.column ," envolve 'shooter' : ",secondary.amount);
+					if(secondary.amount > 0)console.log(secondary.row,secondary.column, 'with' , primary.row,primary.column ," envolve: ",secondary.ghostName,secondary.amount);
 				}
 			}
 		}
 		if(j+1<=column-1){
 			var thirdary = mapData[i*column+j+1];
-			if(thirdary.ghostName == primary.ghostName && thirdary.user == primary.user && primary.ghostName!='king'){
+			if(thirdary.ghostName == primary.ghostName && thirdary.user == primary.user && primary.ghostName!='angel'){
 				if(primary.amount <= thirdary.amount){
 					thirdary.amount -= primary.amount;
 					megaList(primary);
 					ghostDrawer(primary);
 					ghostDrawer(thirdary);
-					if(primary.amount > 0)console.log(primary.row,primary.column, 'with' , thirdary.row,thirdary.column ," envolve 'shooter' : ",primary.amount);
+					if(primary.amount > 0)console.log(primary.row,primary.column, 'with' , thirdary.row,thirdary.column ," envolve: ",primary.ghostName,primary.amount);
 				}else if(primary.amount > thirdary.amount){
 					primary.amount -= thirdary.amount;
 					megaList(thirdary);
 					ghostDrawer(primary);
 					ghostDrawer(thirdary);
-					if(thirdary.amount > 0)console.log(thirdary.row,thirdary.column , 'with' , primary.row,primary.column ," envolve 'shooter' : ",thirdary.amount);
+					if(thirdary.amount > 0)console.log(thirdary.row,thirdary.column , 'with' , primary.row,primary.column ," envolve: ",thirdary.ghostName,thirdary.amount);
 				}
 			}
 		}
@@ -582,13 +644,22 @@ function ghostBoardSteup(){
 		step : 2,
 		attack : 1,
 		attackRange : 1,
+		ability : 1
+	}
+	megaListBoard.push(data);
+
+	var data ={
+		ghostName : 'knight',
+		step : 4,
+		attack : 1,
+		attackRange : 2,
 		ability : 0
 	}
 	megaListBoard.push(data);
 
 	var data ={
 		ghostName : 'shooter',
-		step : 3,
+		step : 2,
 		attack : 1,
 		attackRange : 3,
 		ability : 0
@@ -596,11 +667,11 @@ function ghostBoardSteup(){
 	megaListBoard.push(data);
 
 	var data ={
-		ghostName : 'king',
+		ghostName : 'angel',
 		step : 1,
 		attack : 2,
 		attackRange : 1,
-		ability : 1
+		ability : 2
 	}
 	megaListBoard.push(data);
 }
@@ -621,7 +692,9 @@ function megaList(data){
 		data.ability = megaListBoard[ghostype].ability;
 	}
 }
+//mega systems -----------------------------------------------------------------
 
+//firebase systems -----------------------------------------------------------------
 var database;
 function firebaseSetup(){
 	var config = {
@@ -643,7 +716,7 @@ function gotData(data){
 	if(login == false){
 		if(upData.Rconnection == 1 && upData.Lconnection ==1){
 			login= true;
-			farmer(14,100);
+			farmer(1,5);
 			for(var i=0;i<mapData.length;i++){
 		  		if(mapData[i].user >0){
 		  			mapData[i].chessMovable = true;
@@ -664,27 +737,35 @@ function errData(data){
 	console.log('Error!');
 	console.log(data);
 }
+//firebase systems -----------------------------------------------------------------
 
-var login = false,roomCode_key;
+//login systems -----------------------------------------------------------------
+var login = false,roomCode_key,loginRoundown=0;
 var input, roomCode;
 var submitButton,createRoom,join;
 function submit(){
 	input = createInput('who am i');
-	input.position(width/2-input.width/2, height/2);
 	submitButton = createButton('submit');
-	submitButton.position(input.x + input.width, height/2);
+	var x = (windowWidth - width) / 2;
+	var y = (windowHeight - height) / 2;
+	input.position(x+width/2-input.width/2, y+height/2);
+	submitButton.position(input.x + input.width, y+height/2);
 
 	submitButton.mousePressed( function(){
 		if(input.value().length <= 16){
+			loginRoundown = 1;
 			input.remove();
 			submitButton.remove();
+			var x = (windowWidth - width) / 2;
+			var y = (windowHeight - height) / 2;
 			createRoom = createButton('createRoom');
-			createRoom.position((width-createRoom.width)/2, height/2);
+			createRoom.position(x+(width-createRoom.width)/2, y+height/2);
 			join = createButton('join');
-			join.position((width-join.width)/2, height/2+createRoom.height*2);
+			join.position(x+(width-join.width)/2, y+height/2+createRoom.height*2);
 			roomCode = createInput('- the room code is -');
-			roomCode.position((width-roomCode.width)/2, join.y+join.height);
+			roomCode.position(x+(width-roomCode.width)/2, join.y+join.height);
 			createRoom.mousePressed( function(){
+				loginRoundown = 2;
 				var ref = database.ref("chess/");
 				var whereami = nf(ceil(random(9999)),4);
 				var data = {
@@ -707,6 +788,7 @@ function submit(){
 						console.log(roomCode_key);
 					}
 				});
+
 				var roomRef = database.ref('chess/'+roomCode_key);
 				roomRef.on('value',gotData,errData);
 
@@ -719,24 +801,39 @@ function submit(){
 			});
 			join.mousePressed( function(){
 				roomCode_key = roomCode.value();
-				var roomRef = database.ref('chess/'+roomCode_key);
-				roomRef.update ({
-			    	"Rplayer" : input.value(),
-			    	"Rconnection" :'1',
+				var chessRef = database.ref('chess/');
+				chessRef.once('value')
+				.then(function(data) {
+					var roomkeys = data.val();
+					var keys = Object.keys(roomkeys);
+					for(var i=0;i<keys.length;i++){
+						if(roomCode_key == keys[i]){
+							loginRoundown = 2;
+							var roomRef = database.ref('chess/'+roomCode_key);
+							roomRef.update ({
+						    	"Rplayer" : input.value(),
+						    	"Rconnection" :'1',
+							});
+							var roomRef = database.ref('chess/'+roomCode_key);
+							roomRef.on('value',gotData,errData);
+
+							player = 2;
+
+						  	createRoom.remove();
+						  	join.remove(); 
+						  	roomCode.remove();
+						}else{
+							console.log('not you');
+						}
+					}
 				});
-				var roomRef = database.ref('chess/'+roomCode_key);
-				roomRef.on('value',gotData,errData);
-
-				player = 2;
-
-			  	createRoom.remove();
-			  	join.remove(); 
-			  	roomCode.remove();
 			});
 		}
 	});
 }
+//login systems -----------------------------------------------------------------
 
+//attack systems -----------------------------------------------------------------
 function attack(){
 	for (var i = mapData.length - 1; i >= 0; i--) {
 		if(mapData[i].user > 0) {
@@ -769,3 +866,50 @@ function attack(){
 		mapData[i].getHurt = 0;
 	}
 } 
+//attack systems -----------------------------------------------------------------
+
+function ability(){
+	console.log("abbb");
+	var farmerAmount1=0,angelAmount1=0;
+	var farmerAmount2=0,angelAmount2=0;
+
+	for (var i = mapData.length - 1; i >= 0; i--) {
+		if(mapData[i].user == 1){
+			if(mapData[i].ability >0) {
+				if(mapData[i].ability == 1){
+					mapData[i].amount += 1;
+					farmerAmount1+= mapData[i].amount;
+				}
+				if(mapData[i].ability == 2){
+					angelAmount1+=1;
+				}
+			}
+		}else if(mapData[i].user == 2){
+			if(mapData[i].ability >0) {
+				if(mapData[i].ability == 1){
+					mapData[i].amount += 1;
+					farmerAmount2+= mapData[i].amount;
+				}
+				if(mapData[i].ability == 2){
+					angelAmount2+=1;
+				}
+			}
+		}
+	}
+	for (var i = mapData.length - 1; i >= 0; i--) {
+		if(mapData[i].user == 1){
+			if(mapData[i].ability >0) {
+				if(mapData[i].ability == 2){
+					mapData[i].amount = floor(farmerAmount1/angelAmount1);
+				}
+			}
+		}else if(mapData[i].user == 2){
+			if(mapData[i].ability >0) {
+				if(mapData[i].ability == 2){
+					mapData[i].amount = floor(farmerAmount2/angelAmount2);
+				}
+			}
+		}
+	}
+
+}
