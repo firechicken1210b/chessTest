@@ -222,6 +222,7 @@ function roundown(){
 	}else if(roundCount % 4 ==2){
 		//step 03: attack
 		attack();
+		ghostcleaner();
 		roundCount += 1;
 	}else if(roundCount % 4 ==3){
 		//step 04: mega envolve and ability
@@ -406,12 +407,12 @@ function farmer(team,data) {
 				image(character_people00l,0,0);
 				textAlign(CENTER);
 				stroke(0);
-				strokeWeight(5);
+				strokeWeight(3);
 				fill(0);
-				text(data,0,13);
+				text(data,11,13);
 				noStroke();
 				fill(255);
-				text(data,0,13);
+				text(data,11,13);
 			}
 
 			mapData[bornX+bornY*row].user = 1;
@@ -438,12 +439,12 @@ function farmer(team,data) {
 				image(character_people00r,0,0);
 				textAlign(CENTER);
 				stroke(0);
-				strokeWeight(5);
+				strokeWeight(3);
 				fill(0);
-				text(data,0,13);
+				text(data,11,13);
 				noStroke();
 				fill(255);
-				text(data,0,13);
+				text(data,11,13);
 			}
 
 			mapData[mapData.length-1-(bornX+bornY*row)].user = 2;
@@ -482,10 +483,11 @@ function deliver(OldData,NewData){
 			if(NewData.ghostName == OldData.ghostName){
 				console.log('[203]: ' ,OldData.row,OldData.column ,' deliver-plus ',ceil(OldData.amount/2), ' to ' , NewData.row,NewData.column);
 				OldData.chessMovable = false;
-					NewData.amount += ceil(OldData.amount/2);
-					OldData.amount -= ceil(OldData.amount/2);
+					NewData.amount += OldData.amount;
+					OldData.amount = 0;
 						ghostDrawer(OldData);
 						ghostDrawer(NewData);
+						ghostcleaner();
 				chessMoving = 0;
 			}else{
 				chessMoving = 0;
@@ -499,7 +501,8 @@ function deliver(OldData,NewData){
 function dataInherit(OldData,NewData){
 	var enemy = (player ==1)? 2:1;
 	if(OldData.user != enemy && NewData.user != enemy){
-		OldData.chessMovable = false;
+		OldData.chessMovable = true;
+		NewData.chessMovable = false;
 			var changeuser = NewData.user;
 			var changeghost = NewData.ghost;
 			var changeghostName = NewData.ghostName;
@@ -564,89 +567,71 @@ function ghostDrawer(data){
 	data.ghost.draw = function(){
 		if(data.ghostName == 'farmer'){
 			if(data.user==1){
-				//fill(100,0,0);
 				imageMode(CENTER);
 				image(character_people00l,0,0);
 			}else if(data.user==2){
-				//fill(100);
 				imageMode(CENTER);
 				image(character_people00r,0,0);
 			}
-			//noStroke();
-			//rectMode(CENTER);
-			//rect(0,0,r-7,r-7);
 			textAlign(CENTER);
 			stroke(0);
-			strokeWeight(5);
+			strokeWeight(3);
 			fill(0);
-			text(data.amount,0,13);
+			text(data.amount,11,13);
 			noStroke();
 			fill(255);
-			text(data.amount,0,13);
+			text(data.amount,11,13);
+
 		}else if(data.ghostName == 'knight'){
 			if(data.user==1){
-				//fill(200,0,0);
 				imageMode(CENTER);
 				image(character_people01l,0,0);
 			}else if(data.user==2){
-				//fill(200);
 				imageMode(CENTER);
 				image(character_people01r,0,0);
 			}
-			//stroke(0);
-			//rectMode(CENTER);
-			//rect(0,0,r-5,r-5);
 			textAlign(CENTER);
 			stroke(0);
-			strokeWeight(5);
+			strokeWeight(3);
 			fill(0);
-			text(data.amount,0,13);
+			text(data.amount,11,13);
 			noStroke();
 			fill(255);
-			text(data.amount,0,13);
+			text(data.amount,11,13);
+
 		}else if(data.ghostName == 'shooter'){
 			if(data.user==1){
-				//fill(200,0,0);
 				imageMode(CENTER);
 				image(character_people02l,0,0);
 			}else if(data.user==2){
-				//fill(0);
 				imageMode(CENTER);
 				image(character_people02r,0,0);
 			}
-			//noStroke();
-			//rectMode(CENTER);
-			//rect(0,0,r-3,r-3);
 			textAlign(CENTER);
 			stroke(0);
-			strokeWeight(5);
+			strokeWeight(3);
 			fill(0);
-			text(data.amount,0,13);
+			text(data.amount,11,13);
 			noStroke();
 			fill(255);
-			text(data.amount,0,13);
+			text(data.amount,11,13);
+
 		}else if(data.ghostName == 'angel'){
 			if(data.user==1){
-				//stroke(255,0,0);
-				//fill(255);
 				imageMode(CENTER);
 				image(character_people03l,0,0);
 			}else if(data.user==2){
-				//stroke(0);
-				//fill(255);
 				imageMode(CENTER);
 				image(character_people03r,0,0);
 			}
-			//rectMode(CENTER);
-			//rect(0,0,r-3,r-3);
 			textAlign(CENTER);
 			stroke(0);
-			strokeWeight(5);
+			strokeWeight(3);
 			fill(0);
-			text(data.amount,0,13);
+			text(data.amount,11,13);
 			noStroke();
 			fill(255);
-			text(data.amount,0,13);
+			text(data.amount,11,13);
 		}
 	}
 }
@@ -654,8 +639,9 @@ function ghostcleaner(){
 	for(var i=0;i<mapData.length;i++){
   		if(mapData[i].amount <= 0 && mapData[i].user !=0){
   			if(mapData[i].ghostName == "angel"){
+  				var lostangel = mapData[i].user;
   				for(var j=0;j<mapData.length;j++){
-  					if(mapData[j].ghostName == "farmer"){
+  					if(mapData[j].ghostName == "farmer" && mapData[i].user==lostangel){
   						mapData[j].amount = 0;
   					}
   				}
@@ -670,6 +656,7 @@ function ghostcleaner(){
 			mapData[i].attackRange = 0;
 			mapData[i].ability = 0;
   			mapData[i].chessMovable = false;
+  			mapData[i].getHurt = 0;
   		}
   	} 
 }
@@ -683,37 +670,37 @@ function mega(){
 		var primary = mapData[i*column+j];
 		if(i-1>=0){
 			var secondary = mapData[(i-1)*column+j];
-			if(secondary.ghostName == primary.ghostName && secondary.user == primary.user && primary.ghostName!='angel'){
+			if(secondary.ghostName == primary.ghostName && secondary.user == primary.user && primary.ghostName!=megaListBoard[megaListBoard.length-1].ghostName){
 				if(primary.amount <= secondary.amount){
+					console.log('['+primary.user+']',primary.row,primary.column, primary.ghostName+':'+primary.amount,'with' , '['+secondary.user+']',secondary.row,secondary.column ,secondary.ghostName+':'+secondary.amount," envolve: ",primary.ghostName,primary.amount);
 					secondary.amount -= primary.amount;
 					megaList(primary);
 					ghostDrawer(primary);
 					ghostDrawer(secondary);
-					if(primary.amount > 0)console.log(primary.row,primary.column, 'with' , secondary.row,secondary.column ," envolve: ",primary.ghostName,primary.amount);
 				}else if(primary.amount > secondary.amount){
+					console.log('['+secondary.user+']',secondary.row,secondary.column, secondary.ghostName+':'+secondary.amount,'with' , '['+primary.user+']',primary.row,primary.column ,primary.ghostName+':'+primary.amount," envolve: ",secondary.ghostName,secondary.amount);
 					primary.amount -= secondary.amount;
 					megaList(secondary);
 					ghostDrawer(primary);
 					ghostDrawer(secondary);
-					if(secondary.amount > 0)console.log(secondary.row,secondary.column, 'with' , primary.row,primary.column ," envolve: ",secondary.ghostName,secondary.amount);
 				}
 			}
 		}
 		if(j+1<=column-1){
 			var thirdary = mapData[i*column+j+1];
-			if(thirdary.ghostName == primary.ghostName && thirdary.user == primary.user && primary.ghostName!='angel'){
+			if(thirdary.ghostName == primary.ghostName && thirdary.user == primary.user && primary.ghostName!=megaListBoard[megaListBoard.length-1].ghostName){
 				if(primary.amount <= thirdary.amount){
+					console.log('['+primary.user+']',primary.row,primary.column, primary.ghostName+':'+primary.amount,'with' , '['+thirdary.user+']',thirdary.row,thirdary.column ,thirdary.ghostName+':'+thirdary.amount," envolve: ",primary.ghostName,primary.amount);
 					thirdary.amount -= primary.amount;
 					megaList(primary);
 					ghostDrawer(primary);
 					ghostDrawer(thirdary);
-					if(primary.amount > 0)console.log(primary.row,primary.column, 'with' , thirdary.row,thirdary.column ," envolve: ",primary.ghostName,primary.amount);
 				}else if(primary.amount > thirdary.amount){
+					console.log('['+thirdary.user+']',thirdary.row,thirdary.column, thirdary.ghostName+':'+thirdary.amount,'with' , '['+primary.user+']',primary.row,primary.column ,primary.ghostName+':'+primary.amount," envolve: ",thirdary.ghostName,thirdary.amount);
 					primary.amount -= thirdary.amount;
 					megaList(thirdary);
 					ghostDrawer(primary);
 					ghostDrawer(thirdary);
-					if(thirdary.amount > 0)console.log(thirdary.row,thirdary.column , 'with' , primary.row,primary.column ," envolve: ",thirdary.ghostName,thirdary.amount);
 				}
 			}
 		}
@@ -736,7 +723,7 @@ function ghostBoardSteup(){
 		ghostName : 'knight',
 		step : 4,
 		attack : 1,
-		attackRange : 2,
+		attackRange : 3,
 		ability : 0
 	}
 	megaListBoard.push(data);
@@ -745,7 +732,7 @@ function ghostBoardSteup(){
 		ghostName : 'shooter',
 		step : 2,
 		attack : 3,
-		attackRange : 3,
+		attackRange : 5,
 		ability : 0
 	}
 	megaListBoard.push(data);
@@ -938,9 +925,10 @@ function attack(){
 				}
 			}
 			if(distList[0] >0){
-				mapData[distMin_row*column+distMin_column].getHurt = mapData[i].attack*mapData[i].amount;
-				attackation(mapData[i],mapData[distMin_row*column+distMin_column]);
-				console.log(mapData[i].row,mapData[i].column,mapData[i].ghostName,'hit the',mapData[distMin_row*column+distMin_column].row,mapData[distMin_row*column+distMin_column].column,mapData[distMin_row*column+distMin_column].ghostName,'damage: ',mapData[distMin_row*column+distMin_column].getHurt);
+				var disTarget = distMin_row*column+distMin_column;
+				mapData[disTarget].getHurt += mapData[i].attack*mapData[i].amount;
+				attackation(mapData[i],mapData[disTarget]);
+				console.log('['+mapData[i].user+']',mapData[i].row,mapData[i].column,mapData[i].ghostName+':'+mapData[i].amount,'hit the','['+mapData[disTarget].user+']',mapData[disTarget].row,mapData[disTarget].column,mapData[disTarget].ghostName+':'+mapData[disTarget].amount,'damage: ',mapData[i].attack*mapData[i].amount,'last:',mapData[disTarget].amount - mapData[disTarget].getHurt);
 			}
 		}
 	}
@@ -954,7 +942,6 @@ function attack(){
 //attack systems -----------------------------------------------------------------
 
 function ability(){
-	console.log("abbb");
 	var farmerAmount1=0,angelAmount1=0;
 	var farmerAmount2=0,angelAmount2=0;
 
