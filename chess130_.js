@@ -37,7 +37,7 @@ function preload(){
 	bg = loadImage('data/bg.jpg');
 	bg_floor = loadImage('data/floor0.png');
 	bg_floor_ = loadImage('data/floor.png');
-	megaAnimation = loadImage('animations/mega.png');
+	megaAnimation = loadImage('animations/mega02.png');
 	state_guard = loadImage('data/g.png');
 	state_miss = loadImage('data/m.png');
 	//-------------------------------------------<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -124,6 +124,7 @@ var cnv;
 // main processing things--------------------
 function setup() {
 	cnv = createCanvas(900,900).parent('processing');
+	frameRate(32);
 	centerCanvas();
 	firebaseSetup();
 	submit();
@@ -145,7 +146,7 @@ function draw() {
 		fill(0);
 	  	textAlign(CENTER);
 	  	textStyle(BOLD);
-	  	textSize(12);
+	  	textSize(13);
 	  	text('Round: '+roundis, width/2, 30);
 	  	text(upData.Lplayer, 60, 30);
 	  	text(upData.Rplayer, width-60, 30);
@@ -405,7 +406,7 @@ function mapSetup(){
 						image(bg_floor,0,0);
 					}
 				}else{
-					if(mapData[k] == chessMoving){
+					if(distanceMovable(chessMoving,mapData[k]) && (mapData[k].user==player || mapData[k].user==0)){
 						image(bg_floor_,0,0);
 					}else{
 						image(bg_floor,0,0);
@@ -495,7 +496,7 @@ function mapSetup(){
 							image(bg_floor,0,0);
 						}
 					}else{
-						if(mapData[k] == chessMoving){
+						if(mapData[k] == chessMoving || distanceMovable(chessMoving,mapData[k])){
 							image(bg_floor_,0,0);
 						}else{
 							image(bg_floor,0,0);
@@ -1032,7 +1033,6 @@ function megaRoundown(){
 	}else if(megaRound == 1){
 		if(megaAnimateList.length>0){
 			megaAnimateList[0].display();
-			megaAnimateList[0].move();
 			if (megaAnimateList[0].mframe > 16) {
 				//megaAnimateList[0].t.amount -= megaAnimateList[0].f.amount;
 				//megaList(megaAnimateList[0].f);
@@ -1128,14 +1128,6 @@ function megaAnimate(from,to){
 			int(this.tx-(this.picSize+this.mframe)/2), int(this.ty-(this.picSize+this.mframe)/2),
 			this.picSize+this.mframe,this.picSize+this.mframe);	
 	}
-
-	this.move = function(){
-		this.tx += random(2,-2);
-		this.ty += random(2,-2);
-		this.fx += random(2,-2);
-		this.fy += random(2,-2);
-		this.time --;
-	}
 }
 //mega systems -----------------------------------------------------------------
 
@@ -1168,7 +1160,13 @@ function gotData(data){
 		  		}
 		  	}
 		}
-	}else if(login){
+	}else if(login){		
+		if(upData.Rconnection == 0){
+			console.log('right side lost connect');
+		}else if(upData.Lconnection == 0){
+			console.log('left side lost connect');
+		}
+
 		if(upData.Rroundis == upData.Lroundis){
 			if(player == 1){
 
@@ -1235,7 +1233,9 @@ function submit(){
 				});
 
 				var roomRef = database.ref('chess/'+roomCode_key);
+				
 				roomRef.on('value',gotData,errData);
+				roomRef.onDisconnect().update({ "Lconnection": 0 });
 
 				if(input.value().indexOf("sad")==0){unit = -1;console.log("cccccc"+input.value().indexOf("sad"));}
 				player = 1;
@@ -1260,9 +1260,11 @@ function submit(){
 						    	"Rplayer" : input.value(),
 						    	"Rconnection" :'1',
 							});
-							var roomRef = database.ref('chess/'+roomCode_key);
+		
 							roomRef.on('value',gotData,errData);
+							roomRef.onDisconnect().update({ "Rconnection": 0 });
 
+							if(input.value().indexOf("sad")==0){unit = -1;console.log("cccccc"+input.value().indexOf("sad"));}
 							player = 2;
 
 						  	createRoom.remove();
@@ -1418,7 +1420,7 @@ function attack(){
 			var attackwho;
 			var attack_row,attack_column;
 
-			if(mapData[i].attackRange <5) {
+			if(mapData[i].attackMode <3) {
 				for(var j =mapData[i].row+mapData[i].attackRange*-1;j<=mapData[i].row+mapData[i].attackRange;j++){
 				for(var k=mapData[i].column+mapData[i].attackRange*-1;k<=mapData[i].column+mapData[i].attackRange;k++){
 						//check the enemy in the attackRange with in the map
@@ -1443,7 +1445,7 @@ function attack(){
 					attackation(mapData[i].attack*mapData[i].amount,mapData[i],mapData[attackTarget]);
 					console.log('['+mapData[i].user+']',mapData[i].row,mapData[i].column,mapData[i].ghostName+':'+mapData[i].amount,'hit the','['+mapData[attackTarget].user+']',mapData[attackTarget].row,mapData[attackTarget].column,mapData[attackTarget].ghostName+':'+mapData[attackTarget].amount,'damage: ',mapData[i].attack*mapData[i].amount,'last:',mapData[attackTarget].amount - mapData[attackTarget].getHurt);
 				}
-			}else if(mapData[i].attackRange == 5) {
+			}else if(mapData[i].attackMode == 3) {
 				for(var j =mapData[i].row+mapData[i].attackRange*-1;j<=mapData[i].row+mapData[i].attackRange;j++){
 				for(var k=mapData[i].column+mapData[i].attackRange*-1;k<=mapData[i].column+mapData[i].attackRange;k++){
 						//check the enemy in the attackRange with in the map
@@ -1513,13 +1515,8 @@ function attackAnimate(damageCount,from,to){
 
 	this.display = function(){
 		if(this.time>20){
-			/*this.fFrame += (this.fimg.frame > this.fFrame) ? 1:0;
-			copy(this.fimg.pic,
-				(this.fFrame*192)%960, floor((this.fFrame*192)/960)*192, 192, 192,
-				int(this.fx-(this.picSize+this.fFrame)/2), int(this.fy-(this.picSize+this.fFrame)/2),
-				this.picSize+this.fFrame, this.picSize+this.fFrame);*/
 			
-			if(this.f.attackRange ==5){
+			if(this.f.attackMode ==3){
 
 				this.pathFrame += (this.pathimg.frame > this.pathFrame) ? 1:0;
 				//this.pathx = lerp(this.pathx,this.tx,0.31);
@@ -1532,13 +1529,13 @@ function attackAnimate(damageCount,from,to){
 					this.picSize, this.picSize);
 			}
 
-			if(this.f.attackRange < 5){
+			if(this.f.attackMode < 3){
 				this.f.ghost.position.x = lerp(this.tx,this.f.ghost.position.x,this.time/40);
 				this.f.ghost.position.y = lerp(this.ty,this.f.ghost.position.y,this.time/40);
 			}
 
 		}else{
-			if(this.time == 10){
+			if(this.time == this.time/4){
 				damageTexts.push(new damageText(this.hurt,this.t));
 			}
 
@@ -1820,8 +1817,8 @@ function abilityAnimate(abilityType,from,dataA,dataB){
 					int(this.fx-(this.picSize+this.aFrame)/2),int(this.fy-(this.picSize+this.aFrame)/2),
 					this.picSize+this.aFrame,this.picSize+this.aFrame);
 				if(this.time == 1){
-					this.hurt = -1*floor(this.f.amount/2);
-					this.f.amount += floor(this.f.amount/2);
+					this.hurt = (this.f.amount+floor(this.f.amount/2)<=99) ? -1*floor(this.f.amount/2) : this.f.amount-99;
+					this.f.amount += (this.f.amount+floor(this.f.amount/2)<=99) ? floor(this.f.amount/2) : 99-this.f.amount;
 				}
 
 			}else if(this.abilityType+1 == 4){
@@ -1877,7 +1874,6 @@ function abilityAnimate(abilityType,from,dataA,dataB){
 							}
 						}
 					}
-					//ghostMaker(this.f.user,this.f.unit,2,1,this.d.row,this.d.column);
 					this.hurt = (roundis-this.f.amount)*-1;
 					this.f.amount = roundis;
 				}
@@ -1950,7 +1946,7 @@ function tellMeAbility(data){
 		if(data.ghostLevel == 1){
 			tellMe = {
 				abilityName : "[育兒]",
-				detail : "該單位中每兩位的 農民(Farmer) 每回合會為該單位增加一位農民",
+				detail : "該單位中每兩位的 農民(Farmer) 每回合會為該單位增加一位農民(上限99)",
 				shit : "還有人沒來, 這不只是我的經歷"
 			}
 		}else if(data.ghostLevel == 2){
@@ -1996,7 +1992,7 @@ function tellMeAbility(data){
 			tellMe = {
 				abilityName : "[思念的人]",
 				detail : "該單位每回合皆會甦醒於對角的位置",
-				shit : "呼喚成功的小孩將被帶往 『那邊』 去"
+				shit : "呼喚成功的小孩將被帶往 『那邊』"
 			}
 		}
 	}
@@ -2004,17 +2000,22 @@ function tellMeAbility(data){
 	strokeWeight(1);
 	fill(255,200);
 	rectMode(CENTER);
+	var abilityTextSize = 13; 
+	var abilityTextLeading = 5; 
 	var rectX = (textWidth(tellMe.detail) > textWidth(tellMe.shit)) ? textWidth(tellMe.detail)+20:textWidth(tellMe.shit)+20;
-	rect(width/2,750+((13*5)/2),rectX,13*5);
+	rect(width/2,750+((abilityTextLeading+abilityTextSize)*4/2),rectX,(abilityTextLeading+abilityTextSize)*4);
 	noStroke();
 	fill(0);
 	textAlign(CENTER);
 	textStyle(NORMAL);
-	text("Ability",width/2,750+13);
-	text(tellMe.abilityName,width/2,750+14*2);
-	text(tellMe.detail,width/2,750+14*3);
+	textSize(abilityTextSize);
+	text("Ability",width/2,750+abilityTextSize);
+	text(tellMe.abilityName,width/2,750+abilityTextSize+(abilityTextSize+abilityTextLeading)*1);
+	text(tellMe.detail,width/2,750+abilityTextSize+(abilityTextSize+abilityTextLeading)*2);
 	textStyle(ITALIC);
-	text('- '+tellMe.shit+' -',width/2,750+14*4);
+	textSize(abilityTextSize-2);
+	text('- '+tellMe.shit+' -',width/2,750+abilityTextSize+(abilityTextSize+abilityTextLeading)*3);
+
 }
 //ability systems -----------------------------------------------------------------
 
